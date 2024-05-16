@@ -29,14 +29,21 @@ const config = getConfig();
 
 // Convenience wrapper around Prettier, so that config doesn't have to be
 // passed every time.
-const prettify = buildPrettifier(config.prettierConfig);
+const prettify = buildPrettifier({
+  semi: true,
+  singleQuote: true,
+  trailingComma: 'es5',
+  printWidth: 80,
+  tabWidth: 2,
+  useTabs: false
+});
 
 program
   .version(version)
   .arguments('<componentName>')
   .option(
     '-l, --lang <language>',
-    'Which language to use (default: "js")',
+    'Which language to use (default: "ts")',
     /^(js|ts)$/i,
     config.lang
   )
@@ -55,7 +62,7 @@ const fileExtension = options.lang === 'js' ? 'js' : 'tsx';
 const indexExtension = options.lang === 'js' ? 'js' : 'ts';
 
 // Find the path to the selected template file.
-const templatePath = `./templates/${options.lang}.js`;
+const templatePath = options.lang === 'js' ? './templates/js.js' : './templates/ts.tsx';
 
 // Get all of our file paths worked out, for the user's project.
 const componentDir = `${options.dir}/${componentName}`;
@@ -100,7 +107,7 @@ mkDirPromise(componentDir)
   .then(() => readFilePromiseRelative(templatePath))
   .then((template) => {
     logItemCompletion('Directory created.');
-    return template;
+    return template; 
   })
   .then((template) =>
     // Replace our placeholders with real data (so far, just the component name)
