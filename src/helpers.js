@@ -1,13 +1,21 @@
+/*
+Helpers are application-specific functions.
+
+They're useful for abstracting away plumbing and other important-but-
+uninteresting parts of the code, specific to this codebase.
+
+NOTE: For generalized concerns that aren't specific to this project,
+use `utils.js` instead.
+*/
 const os = require("os");
 const fs = require("fs");
 const path = require("path");
+
 const prettier = require("prettier");
+const chalk = require("chalk");
 
 const { requireOptional, sample } = require("./utils");
 const AFFIRMATIONS = require("./affirmations");
-
-// Dynamically import chalk
-let chalkPromise = import("chalk").then((chalkModule) => chalkModule.default);
 
 // Get the configuration for this component.
 // Overrides are as follows:
@@ -27,21 +35,15 @@ module.exports.getConfig = () => {
     dir: "src/components",
   };
 
-  const globalOverrides = requireOptional(`${home}/.new-component-config.json`);
+  const globalOverrides = requireOptional(`/${home}/.new-component-config.json`);
 
-  const localOverrides = requireOptional(`${currentPath}/.new-component-config.json`);
+  const localOverrides = requireOptional(`/${currentPath}/.new-component-config.json`);
 
   return Object.assign({}, defaults, globalOverrides, localOverrides);
 };
 
-module.exports.buildPrettifier = (prettierConfig) => {
-  let config;
-  try {
-    config = prettier.resolveConfig.sync(process.cwd()) || prettierConfig;
-  } catch (error) {
-    console.error("Error resolving Prettier configuration:", error);
-    config = prettierConfig;
-  }
+module.exports.buildPrettifier = () => {
+  let config = prettier.resolveConfig.sync(process.cwd());
 
   // default config:
   config = config || {
@@ -50,8 +52,12 @@ module.exports.buildPrettifier = (prettierConfig) => {
     trailingComma: "es5",
   };
 
-  // Ensure the correct parser is set based on the file extension
-  return (text, parser) => prettier.format(text, { ...config, parser });
+  // Prettier warns if we don't specify a parser or a file path.
+  // TODO: Maybe we should create the file first, so that it can
+  // serve as the file path?
+  config.parser = config.parser || "babel";
+
+  return (text) => prettier.format(text, config);
 };
 
 module.exports.createParentDirectoryIfNecessary = async (dir) => {
@@ -77,25 +83,22 @@ const langNames = {
   ts: "TypeScript",
 };
 
-const logComponentLang = async (selected) => {
-  const chalk = await chalkPromise;
-  return ["js", "ts"]
+const logComponentLang = (selected) =>
+  ["js", "ts"]
     .map((option) =>
       option === selected
         ? `${chalk.bold.rgb(...colors.blue)(langNames[option])}`
         : `${chalk.rgb(...colors.darkGray)(langNames[option])}`
     )
     .join("  ");
-};
 
-module.exports.logIntro = async ({ name, dir, lang }) => {
-  const chalk = await chalkPromise;
+module.exports.logIntro = ({ name, dir, lang }) => {
   console.info("\n");
   console.info(`✨  Creating the ${chalk.bold.rgb(...colors.gold)(name)} component ✨`);
   console.info("\n");
 
   const pathString = chalk.bold.rgb(...colors.blue)(dir);
-  const langString = await logComponentLang(lang);
+  const langString = logComponentLang(lang);
 
   console.info(`Directory:  ${pathString}`);
   console.info(`Language:   ${langString}`);
@@ -104,22 +107,19 @@ module.exports.logIntro = async ({ name, dir, lang }) => {
   console.info("\n");
 };
 
-module.exports.logItemCompletion = async (successText) => {
-  const chalk = await chalkPromise;
+module.exports.logItemCompletion = (successText) => {
   const checkmark = chalk.rgb(...colors.green)("✓");
   console.info(`${checkmark} ${successText}`);
 };
 
-module.exports.logConclusion = async () => {
-  const chalk = await chalkPromise;
+module.exports.logConclusion = () => {
   console.info("\n");
   console.info(chalk.bold.rgb(...colors.green)("Component created!"));
   console.info(chalk.rgb(...colors.mediumGray)(sample(AFFIRMATIONS)));
   console.info("\n");
 };
 
-module.exports.logError = async (error) => {
-  const chalk = await chalkPromise;
+module.exports.logError = (error) => {
   console.info("\n");
   console.info(chalk.bold.rgb(...colors.red)("Error creating component."));
   console.info(chalk.rgb(...colors.red)(error));
