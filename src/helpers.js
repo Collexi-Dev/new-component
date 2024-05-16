@@ -1,16 +1,13 @@
-const path = require("path");
 const os = require("os");
 const fs = require("fs");
+const path = require("path");
 const prettier = require("prettier");
 
 const { requireOptional, sample } = require("./utils");
 const AFFIRMATIONS = require("./affirmations");
 
 // Dynamically import chalk
-let chalk;
-(async () => {
-  chalk = (await import("chalk")).default;
-})();
+let chalkPromise = import("chalk").then((chalkModule) => chalkModule.default);
 
 // Get the configuration for this component.
 // Overrides are as follows:
@@ -80,22 +77,25 @@ const langNames = {
   ts: "TypeScript",
 };
 
-const logComponentLang = (selected) =>
-  ["js", "ts"]
+const logComponentLang = async (selected) => {
+  const chalk = await chalkPromise;
+  return ["js", "ts"]
     .map((option) =>
       option === selected
         ? `${chalk.bold.rgb(...colors.blue)(langNames[option])}`
         : `${chalk.rgb(...colors.darkGray)(langNames[option])}`
     )
     .join("  ");
+};
 
-module.exports.logIntro = ({ name, dir, lang }) => {
+module.exports.logIntro = async ({ name, dir, lang }) => {
+  const chalk = await chalkPromise;
   console.info("\n");
   console.info(`✨  Creating the ${chalk.bold.rgb(...colors.gold)(name)} component ✨`);
   console.info("\n");
 
   const pathString = chalk.bold.rgb(...colors.blue)(dir);
-  const langString = logComponentLang(lang);
+  const langString = await logComponentLang(lang);
 
   console.info(`Directory:  ${pathString}`);
   console.info(`Language:   ${langString}`);
@@ -104,19 +104,22 @@ module.exports.logIntro = ({ name, dir, lang }) => {
   console.info("\n");
 };
 
-module.exports.logItemCompletion = (successText) => {
+module.exports.logItemCompletion = async (successText) => {
+  const chalk = await chalkPromise;
   const checkmark = chalk.rgb(...colors.green)("✓");
   console.info(`${checkmark} ${successText}`);
 };
 
-module.exports.logConclusion = () => {
+module.exports.logConclusion = async () => {
+  const chalk = await chalkPromise;
   console.info("\n");
   console.info(chalk.bold.rgb(...colors.green)("Component created!"));
   console.info(chalk.rgb(...colors.mediumGray)(sample(AFFIRMATIONS)));
   console.info("\n");
 };
 
-module.exports.logError = (error) => {
+module.exports.logError = async (error) => {
+  const chalk = await chalkPromise;
   console.info("\n");
   console.info(chalk.bold.rgb(...colors.red)("Error creating component."));
   console.info(chalk.rgb(...colors.red)(error));
