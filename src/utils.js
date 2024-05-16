@@ -9,52 +9,49 @@ data munging, etc.
 NOTE: Utils should be general enough to be useful in any Node application.
 For application-specific concerns, use `helpers.js`.
 */
-const fs = require('fs');
-const path = require('path');
+import { mkdir, readFile, writeFile } from "fs";
+import { join } from "path";
 
-module.exports.requireOptional = (filePath) => {
-  try {
-    return require(filePath);
-  } catch (e) {
-    // We want to ignore 'MODULE_NOT_FOUND' errors, since all that means is that
-    // the user has not set up a global overrides file.
-    // All other errors should be thrown as expected.
-    if (e.code !== 'MODULE_NOT_FOUND') {
-      throw e;
-    }
-  }
-};
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
-module.exports.mkDirPromise = (dirPath) =>
-  new Promise((resolve, reject) => {
-    fs.mkdir(dirPath, (err) => {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export function mkDirPromise(dirPath) {
+  return new Promise((resolve, reject) => {
+    mkdir(dirPath, (err) => {
       err ? reject(err) : resolve();
     });
   });
+}
 
 // Simple promise wrappers for read/write files.
 // utf-8 is assumed.
-module.exports.readFilePromise = (fileLocation) =>
-  new Promise((resolve, reject) => {
-    fs.readFile(fileLocation, 'utf-8', (err, text) => {
+export function readFilePromise(fileLocation) {
+  return new Promise((resolve, reject) => {
+    readFile(fileLocation, "utf-8", (err, text) => {
       err ? reject(err) : resolve(text);
     });
   });
+}
 
-module.exports.writeFilePromise = (fileLocation, fileContent) =>
-  new Promise((resolve, reject) => {
-    fs.writeFile(fileLocation, fileContent, 'utf-8', (err) => {
+export function writeFilePromise(fileLocation, fileContent) {
+  return new Promise((resolve, reject) => {
+    writeFile(fileLocation, fileContent, "utf-8", (err) => {
       err ? reject(err) : resolve();
     });
   });
+}
 
 // Somewhat counter-intuitively, `fs.readFile` works relative to the current
 // working directory (if the user is in their own project, it's relative to
 // their project). This is unlike `require()` calls, which are always relative
 // to the code's directory.
-module.exports.readFilePromiseRelative = (fileLocation) =>
-  module.exports.readFilePromise(path.join(__dirname, fileLocation));
+export function readFilePromiseRelative(fileLocation) {
+  return readFilePromise(join(__dirname, fileLocation));
+}
 
-module.exports.sample = (arr) => {
+export function sample(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
-};
+}

@@ -1,9 +1,7 @@
-import React from 'react';
+import React from "react";
 
-type Props = {}
+type Props = {};
 
 export default function COMPONENT_NAME({}: Props) {
-  return (
-    <div>COMPONENT_NAME</div>
-  )
-} 
+  return <div>COMPONENT_NAME</div>;
+}

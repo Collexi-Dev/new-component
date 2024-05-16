@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "CLI for creating new React components",
   "homepage": "https://github.com/Collexi-Dev/new-component",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/Collexi-Dev/new-component"
@@ -33,9 +34,9 @@
     "new-component": "./src/index.js"
   },
   "dependencies": {
-    "chalk": "4",
     "commander": "10",
-    "prettier": "2.8.4"
+    "prettier": "^3.2.5",
+    "prettier-plugin-tailwindcss": "^0.5.14"
   },
   "devDependencies": {
     "@types/react": "^18.3.2",

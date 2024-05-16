@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-const fs = require("fs");
-const path = require("path");
+import { existsSync } from "fs";
+import { resolve } from "path";
 
-const { program } = require("commander");
+import { program } from "commander";
 
-const {
+import {
   getConfig,
   buildPrettifier,
   createParentDirectoryIfNecessary,
@@ -12,19 +12,22 @@ const {
   logItemCompletion,
   logConclusion,
   logError,
-} = require("./helpers");
-const { requireOptional, mkDirPromise, readFilePromiseRelative, writeFilePromise } = require("./utils");
+} from "./helpers.js";
+import { mkDirPromise, readFilePromiseRelative, writeFilePromise } from "./utils.js";
 
 // Load our package.json, so that we can pass the version onto `commander`.
-const { version } = require("../package.json");
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 
-// Get the default config for this component (looks for local/global overrides,
-// falls back to sensible defaults).
+const { version } = require("../package.json");
+// import { version } from "../package.json";
+
+// Get the default config for this component, falls back to sensible defaults).
 const config = getConfig();
 
 // Convenience wrapper around Prettier, so that config doesn't have to be
 // passed every time.
-const prettify = buildPrettifier(config.prettierConfig);
+const prettify = await buildPrettifier(config.prettierConfig);
 
 program
   .version(version)
@@ -49,7 +52,7 @@ const filePath = `${componentDir}/${componentName}.${fileExtension}`;
 const indexPath = `${componentDir}/index.${indexExtension}`;
 
 // Our index template is super straightforward, so we'll just inline it for now.
-const indexTemplate = prettify(`\
+const indexTemplate = await prettify(`\
 export * from './${componentName}';
 export { default } from './${componentName}';
 `);
@@ -71,8 +74,8 @@ if (!componentName) {
 createParentDirectoryIfNecessary(options.dir);
 
 // Check to see if this component has already been created
-const fullPathToComponentDir = path.resolve(componentDir);
-if (fs.existsSync(fullPathToComponentDir)) {
+const fullPathToComponentDir = resolve(componentDir);
+if (existsSync(fullPathToComponentDir)) {
   logError(
     `Looks like this component already exists! There's already a component at ${componentDir}.\nPlease delete this directory and try again.`
   );
@@ -90,17 +93,17 @@ mkDirPromise(componentDir)
     // Replace our placeholders with real data (so far, just the component name)
     template.replace(/COMPONENT_NAME/g, componentName)
   )
-  .then((template) =>
+  .then(async (template) =>
     // Format it using prettier, to ensure style consistency, and write to file.
-    writeFilePromise(filePath, prettify(template))
+    writeFilePromise(filePath, await prettify(template))
   )
   .then((template) => {
     logItemCompletion("Component built and saved to disk.");
     return template;
   })
-  .then((template) =>
+  .then(async (template) =>
     // We also need the `index.js` file, which allows easy importing.
-    writeFilePromise(indexPath, prettify(indexTemplate))
+    writeFilePromise(indexPath, await prettify(indexTemplate))
   )
   .then((template) => {
     logItemCompletion("Index file built and saved to disk.");
