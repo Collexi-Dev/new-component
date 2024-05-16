@@ -23,7 +23,7 @@ import prettierParserTypeScript from "prettier/parser-typescript";
 export function getConfig() {
   const defaults = {
     lang: "ts",
-    dir: "src/components",
+    dir: "src/_components",
   };
 
   return Object.assign({}, defaults);
