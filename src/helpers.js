@@ -1,21 +1,16 @@
-/*
-Helpers are application-specific functions.
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
+const prettier = require("prettier");
 
-They're useful for abstracting away plumbing and other important-but-
-uninteresting parts of the code, specific to this codebase.
+const { requireOptional, sample } = require("./utils");
+const AFFIRMATIONS = require("./affirmations");
 
-NOTE: For generalized concerns that aren't specific to this project,
-use `utils.js` instead.
-*/
-const os = require('os');
-const fs = require('fs');
-const path = require('path');
-
-const prettier = require('prettier');
-const chalk = require('chalk');
-
-const { requireOptional, sample } = require('./utils');
-const AFFIRMATIONS = require('./affirmations');
+// Dynamically import chalk
+let chalk;
+(async () => {
+  chalk = (await import("chalk")).default;
+})();
 
 // Get the configuration for this component.
 // Overrides are as follows:
@@ -31,37 +26,35 @@ module.exports.getConfig = () => {
   const currentPath = process.cwd();
 
   const defaults = {
-    lang: 'ts',
-    dir: 'src/components',
+    lang: "ts",
+    dir: "src/components",
   };
 
-  const globalOverrides = requireOptional(
-    `/${home}/.new-component-config.json`
-  );
+  const globalOverrides = requireOptional(`${home}/.new-component-config.json`);
 
-  const localOverrides = requireOptional(
-    `/${currentPath}/.new-component-config.json`
-  );
+  const localOverrides = requireOptional(`${currentPath}/.new-component-config.json`);
 
   return Object.assign({}, defaults, globalOverrides, localOverrides);
 };
 
-module.exports.buildPrettifier = () => {
-  let config = prettier.resolveConfig.sync(process.cwd());
+module.exports.buildPrettifier = (prettierConfig) => {
+  let config;
+  try {
+    config = prettier.resolveConfig.sync(process.cwd()) || prettierConfig;
+  } catch (error) {
+    console.error("Error resolving Prettier configuration:", error);
+    config = prettierConfig;
+  }
 
   // default config:
   config = config || {
     semi: true,
     singleQuote: true,
-    trailingComma: 'es5',
+    trailingComma: "es5",
   };
 
-  // Prettier warns if we don't specify a parser or a file path.
-  // TODO: Maybe we should create the file first, so that it can
-  // serve as the file path?
-  config.parser = config.parser || 'babel';
-
-  return (text) => prettier.format(text, config);
+  // Ensure the correct parser is set based on the file extension
+  return (text, parser) => prettier.format(text, { ...config, parser });
 };
 
 module.exports.createParentDirectoryIfNecessary = async (dir) => {
@@ -83,59 +76,49 @@ const colors = {
 };
 
 const langNames = {
-  js: 'JavaScript',
-  ts: 'TypeScript',
+  js: "JavaScript",
+  ts: "TypeScript",
 };
 
 const logComponentLang = (selected) =>
-  ['js', 'ts']
+  ["js", "ts"]
     .map((option) =>
       option === selected
         ? `${chalk.bold.rgb(...colors.blue)(langNames[option])}`
         : `${chalk.rgb(...colors.darkGray)(langNames[option])}`
     )
-    .join('  ');
+    .join("  ");
 
 module.exports.logIntro = ({ name, dir, lang }) => {
-  console.info('\n');
-  console.info(
-    `✨  Creating the ${chalk.bold.rgb(...colors.gold)(
-      name
-    )} component ✨`
-  );
-  console.info('\n');
+  console.info("\n");
+  console.info(`✨  Creating the ${chalk.bold.rgb(...colors.gold)(name)} component ✨`);
+  console.info("\n");
 
   const pathString = chalk.bold.rgb(...colors.blue)(dir);
   const langString = logComponentLang(lang);
 
   console.info(`Directory:  ${pathString}`);
   console.info(`Language:   ${langString}`);
-  console.info(
-    chalk.rgb(...colors.darkGray)(
-      '========================================='
-    )
-  );
+  console.info(chalk.rgb(...colors.darkGray)("========================================="));
 
-  console.info('\n');
+  console.info("\n");
 };
 
 module.exports.logItemCompletion = (successText) => {
-  const checkmark = chalk.rgb(...colors.green)('✓');
+  const checkmark = chalk.rgb(...colors.green)("✓");
   console.info(`${checkmark} ${successText}`);
 };
 
 module.exports.logConclusion = () => {
-  console.info('\n');
-  console.info(chalk.bold.rgb(...colors.green)('Component created!'));
+  console.info("\n");
+  console.info(chalk.bold.rgb(...colors.green)("Component created!"));
   console.info(chalk.rgb(...colors.mediumGray)(sample(AFFIRMATIONS)));
-  console.info('\n');
+  console.info("\n");
 };
 
 module.exports.logError = (error) => {
-  console.info('\n');
-  console.info(
-    chalk.bold.rgb(...colors.red)('Error creating component.')
-  );
+  console.info("\n");
+  console.info(chalk.bold.rgb(...colors.red)("Error creating component."));
   console.info(chalk.rgb(...colors.red)(error));
-  console.info('\n');
+  console.info("\n");
 };
